@@ -1,0 +1,42 @@
+<mvc:View
+    controllerName="bpmaint08.controller.Object"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:semantic="sap.f.semantic"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+
+    <semantic:SemanticPage
+        id="page"
+        headerPinnable="false"
+        toggleHeaderOnTitleClick="false"
+        busy="{objectView>/busy}"
+        busyIndicatorDelay="{objectView>/delay}"
+        showFooter="{objectView>/edit}">>
+
+        <semantic:titleHeading>
+            <Title
+                text="{PartnerId}"
+                level="H2"/>
+        </semantic:titleHeading>
+
+        <semantic:headerContent>
+            <ObjectNumber />
+        </semantic:headerContent>
+
+        <semantic:sendEmailAction>
+            <semantic:SendEmailAction id="shareEmail" press=".onShareEmailPress"/>
+        </semantic:sendEmailAction>
+
+    </semantic:SemanticPage>
+        <semantic:titleMainAction>
+			<semantic:TitleMainAction text="{i18n>btnEdit}" press="onEditPress" />
+		</semantic:titleMainAction>
+
+        <!-- Custom Footer Content-->
+		<semantic:footerCustomActions>
+			<Button text="{i18n>btnSave}" press="onSavePress" />
+			<Button text="{i18n>btnCancel}" press="onCancelPress" />
+		</semantic:footerCustomActions>
+
+</mvc:View>
