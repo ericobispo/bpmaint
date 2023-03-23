@@ -2,7 +2,7 @@
 
 specVersion: "2.6"
 metadata:
-  name: bpmaint08
+  name: bpmaint
 type: application
 server:
   customMiddleware:
@@ -29,6 +29,5 @@ server:
     - name: fiori-tools-preview
       afterMiddleware: fiori-tools-appreload
       configuration:
-        component: bpmaint08
+        component: bpmaint
         ui5Theme: sap_horizon
-

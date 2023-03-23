@@ -3,8 +3,10 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "../model/formatter",
     "sap/ui/model/Filter",
-    "sap/ui/model/FilterOperator"
-], function (BaseController, JSONModel, formatter, Filter, FilterOperator) {
+    "sap/ui/model/FilterOperator",
+    "sap/m/MessageBox",
+    "sap/m/MessageToast"
+], function (BaseController, JSONModel, formatter, Filter, FilterOperator, MessageBox, MessageToast) {
     "use strict";
 
     return BaseController.extend("bpmaint08.controller.Worklist", {
@@ -19,7 +21,7 @@ sap.ui.define([
          * Called when the worklist controller is instantiated.
          * @public
          */
-        onInit : function () {
+        onInit: function () {
             var oViewModel;
 
             // keeps the search state
@@ -27,10 +29,25 @@ sap.ui.define([
 
             // Model used to manipulate control states
             oViewModel = new JSONModel({
-                worklistTableTitle : this.getResourceBundle().getText("worklistTableTitle"),
+                worklistTableTitle: this.getResourceBundle().getText("worklistTableTitle"),
                 shareSendEmailSubject: this.getResourceBundle().getText("shareSendEmailWorklistSubject"),
                 shareSendEmailMessage: this.getResourceBundle().getText("shareSendEmailWorklistMessage", [location.href]),
-                tableNoDataText : this.getResourceBundle().getText("tableNoDataText")
+                tableNoDataText: this.getResourceBundle().getText("tableNoDataText"),
+                New: {
+                    PartnerType: '',
+                    PartnerName1: '',
+                    PartnerName2: '',
+                    SearchTerm1: '',
+                    SearchTerm2: '',
+                    Street: '',
+                    HouseNumber: '',
+                    District: '',
+                    City: '',
+                    Region: '',
+                    ZipCode: '',
+                    Country: ''
+                },
+                busy: false
             });
             this.setModel(oViewModel, "worklistView");
 
@@ -49,7 +66,7 @@ sap.ui.define([
          * @param {sap.ui.base.Event} oEvent the update finished event
          * @public
          */
-        onUpdateFinished : function (oEvent) {
+        onUpdateFinished: function (oEvent) {
             // update the worklist's object counter after the table update
             var sTitle,
                 oTable = oEvent.getSource(),
@@ -69,7 +86,7 @@ sap.ui.define([
          * @param {sap.ui.base.Event} oEvent the table selectionChange event
          * @public
          */
-        onPress : function (oEvent) {
+        onPress: function (oEvent) {
             // The source is the list item that got pressed
             this._showObject(oEvent.getSource());
         },
@@ -79,13 +96,13 @@ sap.ui.define([
          * Navigate back in the browser history
          * @public
          */
-        onNavBack : function() {
+        onNavBack: function () {
             // eslint-disable-next-line sap-no-history-manipulation
             history.go(-1);
         },
 
 
-        onSearch : function (oEvent) {
+        onSearch: function (oEvent) {
             if (oEvent.getParameters().refreshButtonPressed) {
                 // Search field's 'refresh' button has been pressed.
                 // This is visible if you select any main list item.
@@ -109,9 +126,50 @@ sap.ui.define([
          * and group settings and refreshes the list binding.
          * @public
          */
-        onRefresh : function () {
+        onRefresh: function () {
             var oTable = this.byId("table");
             oTable.getBinding("items").refresh();
+        },
+
+        onCreatePress: function (oEvent) {
+            /*alert("hellooo world");
+            console.log(oEvent);
+            console.log("teste");*/
+
+            this._getDialog().open();
+        },
+
+        onSavePress: function () {
+            var that = this;
+            let oViewModel = this.getModel("worklistView");
+            let oJson = oViewModel.getProperty("/New");
+            let oModel = this.getOwnerComponent().getModel();
+
+            if (oJson.PartnerType == '') {
+                MessageToast.show("Preencher o tipo de parceiro.");
+            } else {
+                oViewModel.setProperty("/busy", true);
+                oModel.create("/BusinessPartnerSet", oJson, {
+                    success: (oData) => {
+                        MessageBox.success(that.getText("msgBPCreated", [oData.PartnerId]), {
+                            title: that.getText("txtBPUpdated"),
+                            onClose: function () {
+                                that._getDialog().close();
+                                oViewModel.setProperty("/busy", false);
+                            }
+                        });
+                    },
+                    error: (e) => {
+                        MessageBox.error(that.getText("msgBPCrtError"), {
+                            title: that.getText("txtBPCrtError")
+                        });
+                    }
+                });
+            }
+        },
+
+        onClose: function () {
+            this._getDialog().close();
         },
 
         /* =========================================================== */
@@ -123,7 +181,7 @@ sap.ui.define([
          * @param {sap.m.ObjectListItem} oItem selected Item
          * @private
          */
-        _showObject : function (oItem) {
+        _showObject: function (oItem) {
             this.getRouter().navTo("object", {
                 objectId: oItem.getBindingContext().getPath().substring("/BusinessPartnerSet".length)
             });
@@ -134,7 +192,7 @@ sap.ui.define([
          * @param {sap.ui.model.Filter[]} aTableSearchState An array of filters for the search
          * @private
          */
-        _applySearch: function(aTableSearchState) {
+        _applySearch: function (aTableSearchState) {
             var oTable = this.byId("table"),
                 oViewModel = this.getModel("worklistView");
             oTable.getBinding("items").filter(aTableSearchState, "Application");
@@ -142,6 +200,32 @@ sap.ui.define([
             if (aTableSearchState.length !== 0) {
                 oViewModel.setProperty("/tableNoDataText", this.getResourceBundle().getText("worklistNoDataWithSearchText"));
             }
+        },
+
+        _getDialog: function () {
+            if (!this._oDialog) {
+                this._oDialog = sap.ui.xmlfragment("bpmaint08.view.fragment.New", this);
+                this.getView().addDependent(this._oDialog);
+            }
+
+            return this._oDialog;
+        },
+
+        _validateInput: function (oInput) {
+            var sValueState = "None";
+            var bValidationError = false;
+            var oBinding = oInput.getBinding("value");
+
+            try {
+                oBinding.getType().validateValue(oInput.getValue());
+            } catch (oException) {
+                sValueState = "Error";
+                bValidationError = true;
+            }
+
+            oInput.setValueState(sValueState);
+
+            return bValidationError;
         }
 
     });
